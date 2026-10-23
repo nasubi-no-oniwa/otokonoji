@@ -294,3 +294,60 @@ body { background: radial-gradient(circle at 50% 30%, #2a221c, #0f0c0a 70%); }
 .card .btn.wide { margin-top: 2px; }
 .card .ghost2 { align-self: center; margin-top: 4px; }
 .xf-code { font-family: 'Dela Gothic One'; letter-spacing: .1em; }
+
+/* ===== v3：作る画面（スマホ縦で1画面に収める） ===== */
+.mk-tools .btn small { font-size: 10px; margin-left: 2px; }
+.mk-help { margin-left: 4px; font-size: 16px; padding: 4px 12px; }
+.mk-stats { cursor: pointer; }
+.st-list .chip { display: inline-block; }
+@media (max-aspect-ratio: 1/1) {
+  #s-make { height: 100%; }
+  .mk-bar { flex-wrap: nowrap; padding-top: max(6px, env(safe-area-inset-top)); padding-bottom: 6px; gap: 6px; }
+  .mk-ch { padding: 0 10px 0 8px; } .mk-ch span { font-size: 26px; } .mk-ch small { font-size: 10px; }
+  .mk-bar .cls { font-size: 12px; padding: 5px 6px; max-width: 34vw; }
+  .mk-st { font-size: 12px; white-space: nowrap; }
+  .mk-body { flex-direction: column; gap: 6px; overflow: hidden; padding-bottom: max(6px, env(safe-area-inset-bottom)); }
+  .mk-board { flex: 1 1 auto; height: auto; min-height: 120px; }
+  .mk-side { flex: 0 0 auto; overflow: visible; gap: 6px; }
+  .mk-tools { flex-wrap: nowrap; gap: 4px; }
+  .mk-tools .btn { flex: 1 1 0; min-width: 0; padding: 7px 2px; font-size: 13px; white-space: nowrap; box-shadow: 0 2px 0 #b9a27c; }
+  .mk-box-h { font-size: 12px; gap: 6px; flex-wrap: nowrap; }
+  .mk-box-h small { display: none; }
+  .mk-box { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; padding: 5px; min-height: 0; -webkit-overflow-scrolling: touch; touch-action: pan-x; }
+  .mk-tile { flex: 0 0 auto; }
+  .mk-tile canvas { width: 40px !important; height: 40px !important; }
+  .mk-stats { padding: 4px 8px; }
+  .mk-stats canvas { display: none; }
+  .mk-stats .st-list { display: flex; flex-wrap: wrap; gap: 0 10px; font-size: 12px; line-height: 1.5; }
+  .mk-stats .st-list div { border: 0; gap: 3px; }
+  .mk-stats .st-list span { display: none; }
+  .mk-stats .st-list .bonus, .mk-stats .st-list .bonus2 { font-size: 11px; }
+  .mk-stats.open canvas { display: block; width: 120px !important; height: 108px !important; }
+  .mk-stats.open .st-list { display: block; }
+  .mk-stats.open .st-list span { display: inline; }
+  .mk-msg { min-height: 0; font-size: 12px; line-height: 1.4; }
+  .mk-foot .btn.big { padding: 11px 18px; font-size: 17px; }
+}
+@media (max-aspect-ratio: 1/1) and (max-height: 700px) {
+  .mk-tools .btn { padding: 5px 2px; font-size: 12px; }
+  .mk-foot .btn.big { padding: 9px 16px; font-size: 16px; }
+}
+/* 作り方の説明 */
+.tut-step { font-size: 12px; color: #9a6a10; font-weight: 900; margin: 0 0 2px; }
+.tut-pic { font-size: 40px; line-height: 1.1; margin: 8px 0 2px; }
+.qm-card .tut-dots { display: flex; justify-content: center; gap: 6px; margin: 8px 0 0; }
+.qm-card .tut-dots i { width: 8px; height: 8px; border-radius: 50%; background: rgba(0,0,0,.18); }
+.qm-card .tut-dots i.on { background: var(--red); }
+/* あなたの作品：上のボタン・ほかの人の作品 */
+.wk-tools { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.wk-tools .btn { flex: 1 1 auto; }
+.mc.other { background: #eef0f4; }
+@media (max-aspect-ratio: 1/1) {
+  .mk-board { align-items: center; }
+  .mk-bk { display: none; }
+  .mk-bar .btn.sm { padding: 6px 12px; }
+  .mk-ch { flex: 0 0 auto; } .mk-ch small { white-space: nowrap; }
+  .mk-bar .cls { flex: 1 1 auto; min-width: 0; max-width: none; }
+  .mk-st { margin-left: 0; }
+}
+@media (max-aspect-ratio: 1/1) and (max-width: 380px) { .mk-ch small { display: none; } }

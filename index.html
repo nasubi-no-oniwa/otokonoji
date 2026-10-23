@@ -25,7 +25,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Yuji+Syuku&family=M+PLUS+Rounded+1c:wght@500;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=1">
+<link rel="stylesheet" href="css/style.css?v=3">
 </head>
 <body>
 <canvas id="arena"></canvas>
@@ -58,10 +58,11 @@
 <!-- 作る -->
 <section class="screen" id="s-make">
   <header class="bar mk-bar">
-    <button class="btn sm ghost" id="mk-back">← もどる</button>
+    <button class="btn sm ghost" id="mk-back">←<span class="mk-bk"> もどる</span></button>
     <button class="mk-ch" id="mk-ch" title="字をかえる"><span id="mk-ch-t">？</span><small>字をかえる</small></button>
     <select class="cls" id="mk-form" aria-label="字形" hidden></select>
     <span class="mk-st" id="mk-st"></span>
+    <button class="btn sm ghost mk-help" id="mk-help" title="作り方">？</button>
   </header>
   <div class="mk-body">
     <div class="mk-board">
@@ -75,16 +76,16 @@
     </div>
     <div class="mk-side">
       <div class="mk-tools" id="mk-tools">
-        <button class="btn sm" id="mk-rl" title="左に15度">⟲ 15°</button>
-        <button class="btn sm" id="mk-rr" title="右に15度">⟳ 15°</button>
-        <button class="btn sm" id="mk-out">箱にもどす</button>
-        <button class="btn sm" id="mk-undo">↶ もどす</button>
-        <button class="btn sm" id="mk-reset">元の字</button>
-        <button class="btn sm" id="mk-clear">ぜんぶ箱へ</button>
+        <button class="btn sm" id="mk-rl" title="左に15度回す">⟲<small>15°</small></button>
+        <button class="btn sm" id="mk-rr" title="右に15度回す">⟳<small>15°</small></button>
+        <button class="btn sm" id="mk-out" title="えらんだ画を箱にもどす">箱へ</button>
+        <button class="btn sm" id="mk-undo" title="ひとつ前にもどす">↶</button>
+        <button class="btn sm" id="mk-reset" title="元の字の形にもどす">元の字</button>
+        <button class="btn sm" id="mk-clear" title="ぜんぶ箱にもどす">全部箱へ</button>
       </div>
       <div class="mk-box-h"><b>素材箱</b><span id="mk-box-n"></span><small>書き順に並んでいます。ドラッグで台へ</small></div>
       <div class="mk-box" id="mk-box"></div>
-      <div class="mk-stats">
+      <div class="mk-stats" id="mk-stats" title="押すとグラフ">
         <canvas id="mk-radar" width="300" height="270" style="width:150px;height:135px"></canvas>
         <div class="st-list" id="mk-stl"></div>
       </div>
@@ -212,10 +213,11 @@
     <h2>あそびかた</h2>
     <ol>
       <li><b>字をえらんで、ばらす。</b>漢字を1つ入れると、画（かく）ごとにばらばらになって「素材箱」に入ります。同じ字でも日本と中国・台湾で形がちがう字は、どちらの形にするか選べます。</li>
-      <li><b>組み替える。</b>画をドラッグして台に置き、「⟲」「⟳」で15度ずつ回します。縦に積むのではなく、<b>重ねて</b>1つの形にします。画は<b>必ずどこかの画とくっついていないといけません</b>（はなれた画は赤くなり、保存できません）。画はぜんぶ使います。</li>
+      <li><b>組み替える。</b>画をドラッグして台に置き、「⟲」「⟳」で15度ずつ回します。縦に積むのではなく、<b>重ねて</b>1つの形にします。画は<b>必ずどこかの画とくっついていないといけません</b>（はなれた画は赤くなり、保存できません）。画はぜんぶ使います。元の字のままでは保存できません。</li>
       <li><b>保存して戦う。</b>あとは全自動。ぶつかるたびに割れて欠けていき、先に65％を失った方の負け。60秒たったら残りが多い方の勝ちです。<b>同じ作品どうしなら、いつでも必ず同じ結果</b>になります。</li>
       <li><b>練習試合</b>：自分の作品と、何もいじっていない「元の字」（好きな字）を戦わせます。</li>
-      <li><b>挑戦状</b>：作品を挑戦状にすると、<b>8けたの合言葉</b>がつきます。形の画像と合言葉をXに投稿しよう。ほかの人は「挑戦状と戦う」に合言葉を入れて戦えます。ランダムな挑戦状とも戦えます。</li>
+      <li><b>合言葉と挑戦状</b>：作品を保存するたびに<b>8けたの合言葉</b>がつき、その作品がそのまま挑戦状になります。形の画像と合言葉をXに投稿しよう。ほかの人は「挑戦状と戦う」に合言葉を入れて戦えます。ランダムな挑戦状とも戦えます。「あなたの作品」で、最近の挑戦者を見て<b>仕返し</b>もできます。</li>
+      <li><b>番号で取り出す・引き継ぎ</b>：「あなたの作品」で合言葉を入れると、その作品を一覧に取り出せます（ほかの人の作品は改造できます）。スマホを変えるときは「引き継ぎコード」で作品ぜんぶを移せます。</li>
       <li><b>だれかと対戦・部屋番号で対戦</b>：その場にいる人と、作品どうしで1対1。毎晩21時〜22時は対戦タイム！</li>
     </ol>
     <h3>強さの決まり方</h3>
@@ -230,18 +232,18 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="js/firebase-config.js?v=2"></script>
-<script src="js/glyph.js?v=1"></script>
-<script src="js/shape.js?v=1"></script>
-<script src="js/pct.js?v=1"></script>
-<script src="js/sim.js?v=1"></script>
-<script src="js/render.js?v=1"></script>
-<script src="js/resimg.js?v=1"></script>
-<script src="js/sound.js?v=1"></script>
-<script src="js/online.js?v=1"></script>
-<script src="js/qm.js?v=1"></script>
-<script src="js/chal.js?v=1"></script>
-<script src="js/edit.js?v=1"></script>
-<script src="js/main.js?v=1"></script>
+<script src="js/firebase-config.js?v=3"></script>
+<script src="js/glyph.js?v=3"></script>
+<script src="js/shape.js?v=3"></script>
+<script src="js/pct.js?v=3"></script>
+<script src="js/sim.js?v=3"></script>
+<script src="js/render.js?v=3"></script>
+<script src="js/resimg.js?v=3"></script>
+<script src="js/sound.js?v=3"></script>
+<script src="js/online.js?v=3"></script>
+<script src="js/qm.js?v=3"></script>
+<script src="js/chal.js?v=3"></script>
+<script src="js/edit.js?v=3"></script>
+<script src="js/main.js?v=3"></script>
 </body>
 </html>

@@ -84,43 +84,43 @@
   async function getChal(code) { const v = await rest('ok_chal/' + code); return v ? Object.assign({ id: code }, v) : null; }
   C.get = getChal;
 
-  // ---------- 挑戦状にする ----------
+  // ---------- 合言葉をつける（保存するたびに。作品＝挑戦状） ----------
+  const newCode = () => { let c = ''; const r = new Uint32Array(8); if (window.crypto && crypto.getRandomValues) crypto.getRandomValues(r); else for (let i = 0; i < 8; i++) r[i] = Math.floor(Math.random() * 1e9); for (let i = 0; i < 8; i++) c += CH[r[i] % CH.length]; return c; };
+  C.register = async function (s) {
+    const ent = OK.Works.find(s); if (ent && ent.code) return ent.code;
+    const w = await SH.make(s);
+    if (!w.b.connected) throw new Error('はなれた画がある作品には、合言葉をつけられません');
+    if (w.orig) throw new Error('元の字のままでは、合言葉をつけられません');
+    await OK.getDb();
+    const u = OK.uid();
+    for (let tries = 0; tries < 6; tries++) {
+      const c = newCode();
+      try {
+        await update({ ['ok_chal/' + c]: { w: s, t: { '.sv': 'timestamp' }, wn: 0, ln: 0, u }, ['ok_last/' + u]: { '.sv': 'timestamp' } });
+        OK.Works.setCode(s, c); cache = null; C.mineSummary(true);
+        return c;
+      } catch (e) {
+        if (e && /permission/i.test(String(e.code || e.message || ''))) {
+          const ex = await getChal(c).catch(() => null);
+          if (!ex) { await new Promise(r => setTimeout(r, 5200)); continue; }   // 続けて保存しすぎ：少し待ってもう一度
+        } else throw e;
+      }
+    }
+    throw new Error('合言葉をつけられませんでした');
+  };
   C.put = async function (s) {
     const ent = OK.Works.find(s);
     if (ent && ent.code) { C.showCode(s, ent.code); return; }
-    let w; try { w = await SH.make(s); } catch (e) { OK.toast(e.message); return; }
-    if (!w.b.connected) { OK.toast('はなれた画がある作品は、挑戦状にできません'); return; }
-    const dlg = OK.QM.dialog(`<h3>挑戦状にする</h3><p class="qm-sub">この作品に8けたの合言葉をつけて、だれでも戦えるようにします。</p><p class="qm-err" id="cp-e">合言葉をつけています…</p><button class="qm-b sub" id="cp-x">やめる</button>`);
+    const dlg = OK.QM.dialog(`<h3>合言葉をつける</h3><p class="qm-err" id="cp-e">合言葉をつけています…</p><button class="qm-b sub" id="cp-x">とじる</button>`);
     dlg.querySelector('#cp-x').onclick = () => OK.QM.close();
-    try {
-      await OK.getDb();
-      const u = OK.uid();
-      let code = null;
-      for (let tries = 0; tries < 6 && !code; tries++) {
-        let c = ''; const rnd = new Uint32Array(8); (window.crypto || {}).getRandomValues ? crypto.getRandomValues(rnd) : rnd.forEach((_, i) => { rnd[i] = Math.random() * 1e9; });
-        for (let i = 0; i < 8; i++) c += CH[rnd[i] % CH.length];
-        try {
-          await update({ ['ok_chal/' + c]: { w: s, t: { '.sv': 'timestamp' }, wn: 0, ln: 0, u }, ['ok_last/' + u]: { '.sv': 'timestamp' } });
-          code = c;
-        } catch (e) {
-          if (e && /permission/i.test(String(e.code || e.message || ''))) {
-            // 同じ合言葉がすでにある／続けて置きすぎ のどちらか
-            const ex = await getChal(c).catch(() => null);
-            if (!ex) throw new Error('続けて置きすぎです。少し待ってからもう一度ためしてね');
-          } else throw e;
-        }
-      }
-      if (!code) throw new Error('合言葉をつけられませんでした。もう一度ためしてね');
-      OK.Works.setCode(s, code); cache = null;
-      C.showCode(s, code);
-      C.mineSummary(true);
-    } catch (e) { const el = dlg.querySelector('#cp-e'); if (el) el.textContent = e.message && !/^http/.test(e.message) ? e.message : '置けませんでした。通信を確認してね'; }
+    try { const code = await C.register(s); C.showCode(s, code); }
+    catch (e) { const el = dlg.querySelector('#cp-e'); if (el) el.textContent = e.message && !/^http/.test(e.message) ? e.message : 'つけられませんでした。通信を確認してね'; }
   };
   const boshu = (w, code) => `漢ノ字「${w.ch}」の挑戦状！ 合言葉【${C.fmt(code)}】\n倒せるものなら倒してみて→ ${C.link(code)}\n#オトコノジ #漢ノ字`;
   C.showCode = async function (s, code) {
     let w; try { w = await SH.make(s); } catch (e) { return; }
-    const dlg = OK.QM.dialog(`<h3>挑戦状を置きました！</h3>
-      <p class="qm-sub">「${esc(w.ch)}」の作品の合言葉</p><p class="xf-code">${C.fmt(code)}</p>
+    const dlg = OK.QM.dialog(`<h3>合言葉</h3>
+      <p class="qm-sub">「${esc(w.ch)}」の作品</p><p class="xf-code">${C.fmt(code)}</p>
       <p class="qm-sub">形の画像と合言葉をXに投稿しよう。合言葉を「挑戦状と戦う」に入れると、だれでも戦えます。</p>
       <button class="qm-b" id="cs-x">Xに投稿（画像つき）</button><button class="qm-b alt" id="cs-cp">合言葉をコピー</button><button class="qm-b sub" id="cs-ok">とじる</button>`);
     dlg.querySelector('#cs-x').onclick = () => C.shareWork(w, code);
@@ -199,7 +199,9 @@
     try {
       await OK.getDb(); const u = OK.uid();
       const rid = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-      await update({ ['ok_res/' + c.id + '/' + rid]: { w: s.slots[0].w.s, r: winner === 0 ? 1 : 0, t: { '.sv': 'timestamp' }, u }, ['ok_rlast/' + u]: { '.sv': 'timestamp' } });
+      const mine = OK.Works.find(s.slots[0].w.s), rec = { w: s.slots[0].w.s, r: winner === 0 ? 1 : 0, t: { '.sv': 'timestamp' }, u };
+      if (mine && mine.code) rec.c = mine.code;
+      await update({ ['ok_res/' + c.id + '/' + rid]: rec, ['ok_rlast/' + u]: { '.sv': 'timestamp' } });
       const v = await bump(c.id, winner === 1); if (v) { c.wn = v.wn; c.ln = v.ln; } C.header();
     } catch (e) {}
     return note + `（この挑戦状：${recText(c)}）`;
@@ -221,5 +223,40 @@
     nb.hidden = !fresh; nb.innerHTML = `🔔 あなたの挑戦状に、新しい挑戦者が<b>${fresh}人</b>`;
   };
   C.markSeen = function () { if (C.recs) { const sn = store.get('ok_seen', {}); Object.assign(sn, C.recs); store.set('ok_seen', sn); } const nb = $('chal-news'); if (nb) nb.hidden = true; };
+  // ---------- 番号で作品を取り出す ----------
+  C.fetchWork = async function (raw) {
+    const code = C.norm(raw); if (!C.valid(code)) throw new Error('8けたの番号を入れてください');
+    const c = await getChal(code); if (!c || !usable(c)) throw new Error('その番号の作品は見つかりませんでした');
+    const L = OK.Works.list(); if (L.some(x => x.s === c.w)) return { already: true };
+    L.push({ s: c.w, t: Date.now(), code, own: false }); OK.Works.save(L); return { ok: true };
+  };
+  // ---------- アカウントの引き継ぎ ----------
+  const XCH = 'abcdefghjkmnpqrstuvwxyz23456789';
+  C.acctOut = async function () {
+    const L = OK.Works.list(); if (!L.length) throw new Error('まだ作品がありません');
+    let code = ''; for (let i = 0; i < 10; i++) code += XCH[Math.floor(Math.random() * XCH.length)];
+    const v = JSON.stringify(L.map(e => [e.s, e.code || '', e.own === false ? 0 : 1, e.t || 0]));
+    if (v.length > 60000) throw new Error('作品が多すぎます');
+    await update({ ['ok_acct/' + code]: { v, t: { '.sv': 'timestamp' } } });
+    return code;
+  };
+  C.acctIn = async function (raw) {
+    const code = String(raw || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (code.length !== 10) throw new Error('10文字のコードを入れてください');
+    const v = await rest('ok_acct/' + code); if (!v || !v.v) throw new Error('そのコードは見つかりませんでした');
+    const L = OK.Works.list(); let add = 0;
+    for (const [s, c, own, t] of JSON.parse(v.v)) {
+      if (!SH.decode(s)) continue;
+      const e = L.find(x => x.s === s);
+      if (e) { if (c && !e.code) e.code = c; if (own) e.own = true; continue; }
+      L.push({ s, code: c || undefined, own: !!own, t: t || Date.now() }); add++;
+    }
+    OK.Works.save(L); C.mineSummary(true); return add;
+  };
+  // ---------- 仕返し：自分の作品（左）と、破った相手の作品（右） ----------
+  C.revenge = async function (myS, r) {
+    if (r.c) { try { const c = await getChal(r.c); if (c && usable(c)) { await OK.setSlot(0, myS); await C.start(c); OK.toast('仕返し！相手の挑戦状と戦います'); return; } } catch (e) {} }
+    await OK.practice(myS); await OK.setSlot(1, r.w); OK.toast('仕返し！（練習試合）');
+  };
   C.recent = async code => { const v = await rest('ok_res/' + code, { orderBy: 't', limitToLast: 5 }); return Object.entries(v || {}).map(([k, x]) => Object.assign({ id: k }, x)).sort((a, b) => b.t - a.t); };
 })();

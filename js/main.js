@@ -36,10 +36,10 @@
     list: () => store.get('ok_works', []),
     save(L) { store.set('ok_works', L.slice(-WMAX)); },
     find(s) { return Works.list().find(x => x.s === s) || null; },
-    add(s) { const L = Works.list(); if (L.some(x => x.s === s)) return false; L.push({ s, t: Date.now() }); Works.save(L); return true; },
+    add(s) { const L = Works.list(); if (L.some(x => x.s === s)) return false; L.push({ s, t: Date.now(), own: true }); Works.save(L); return true; },
     setCode(s, code) { const L = Works.list(); let e = L.find(x => x.s === s); if (!e) { e = { s, t: Date.now() }; L.push(e); } e.code = code; Works.save(L); },
     remove(s) { Works.save(Works.list().filter(x => x.s !== s)); },
-    codes: () => Works.list().filter(x => x.code).map(x => x.code),
+    codes: () => Works.list().filter(x => x.code && x.own !== false).map(x => x.code),
     lastMade: () => st.myLast,
   };
 
@@ -144,36 +144,89 @@
   OK.thumb = thumb;
 
   // ---------- あなたの作品（画面） ----------
+  const ago = t => { const m = (Date.now() - t) / 60000; return m < 60 ? Math.max(1, Math.round(m)) + '分前' : m < 1440 ? Math.round(m / 60) + '時間前' : Math.round(m / 1440) + '日前'; };
   async function openWorks() {
     show('s-works'); OK.Chal.markSeen();
     const box = $('works-list'); R.freeIn(box); box.innerHTML = '';
+    // 上：取り出す・引き継ぐ
+    const tools = document.createElement('div'); tools.className = 'wk-tools';
+    tools.innerHTML = `<button class="btn sm hot" data-t="new">＋ 新しく作る</button><button class="btn sm" data-t="get">番号で取り出す</button><button class="btn sm" data-t="out">引き継ぎコードを出す</button><button class="btn sm" data-t="in">引き継ぎコードを入れる</button>`;
+    tools.onclick = ev => { const b = ev.target.closest('button'); if (!b) return; S().play('ui'); ({ new: () => OK.E.open(), get: askNumber, out: acctOut, in: acctIn })[b.dataset.t](); };
+    box.appendChild(tools);
     const L = Works.list().slice().reverse();
-    if (!L.length) { box.innerHTML = '<p class="mc-empty">まだ作品がありません。<br>タイトルの「字をばらして作る」から作れます。</p>'; return; }
+    if (!L.length) { box.insertAdjacentHTML('beforeend', '<p class="mc-empty">まだ作品がありません。<br>「＋ 新しく作る」から作れます。</p>'); return; }
+    let shown = 0;
     for (const e of L) {
-      const el = document.createElement('div'); el.className = 'mc';
+      const own = e.own !== false;
+      const el = document.createElement('div'); el.className = 'mc' + (own ? '' : ' other');
       const head = document.createElement('div'); head.className = 'mc-head'; head.appendChild(thumb(e.s, 64, 0));
       const info = document.createElement('div'); info.className = 'mc-info';
       const d = SH.decode(e.s) || {};
-      info.innerHTML = `<b>「${esc(d.ch || '?')}」</b><small>${esc(GL.FORM[d.form] || '')}・${new Date(e.t).toLocaleDateString('ja-JP')}に作った</small>` +
-        (e.code ? `<div class="mc-rec"><span class="code">挑戦状 ${OK.Chal.fmt(e.code)}</span><span class="rec" data-rec="${e.code}">…</span></div>` : '');
+      info.innerHTML = `<b>「${esc(d.ch || '?')}」</b><small>${esc(GL.FORM[d.form] || '')}・${own ? new Date(e.t).toLocaleDateString('ja-JP') + 'に作った' : 'ほかの人の作品（番号で取り出した）'}</small>` +
+        `<div class="mc-rec">${e.code ? `<span class="code">${OK.Chal.fmt(e.code)}</span>${own ? `<span class="rec" data-rec="${e.code}">…</span>` : ''}` : '<span class="rec">合言葉なし</span>'}</div>`;
       head.appendChild(info); el.appendChild(head);
       const bt = document.createElement('div'); bt.className = 'mc-btns';
-      bt.innerHTML = `<button class="btn sm hot" data-a="pr">練習試合</button><button class="btn sm" data-a="ed">作り直す</button>${e.code ? '<button class="btn sm" data-a="cd">合言葉・投稿</button>' : '<button class="btn sm" data-a="ch">挑戦状にする</button>'}<button class="btn sm" data-a="rm">消す</button>`;
+      bt.innerHTML = `<button class="btn sm hot" data-a="pr">練習試合</button><button class="btn sm" data-a="ed">${own ? '作り直す' : '改造する'}</button>` +
+        (own ? (e.code ? '<button class="btn sm" data-a="cd">合言葉・投稿</button>' : '<button class="btn sm" data-a="ch">合言葉をつける</button>') : (e.code ? '<button class="btn sm" data-a="vs">この挑戦状と戦う</button>' : '')) +
+        '<button class="btn sm" data-a="rm">消す</button>';
       bt.onclick = ev => {
         const a = ev.target.closest('button'); if (!a) return; S().play('ui');
-        if (a.dataset.a === 'pr') OK.practice(e.s);
-        else if (a.dataset.a === 'ed') OK.E.open(e.s);
-        else if (a.dataset.a === 'ch') OK.Chal.put(e.s);
-        else if (a.dataset.a === 'cd') OK.Chal.showCode(e.s, e.code);
-        else if (a.dataset.a === 'rm') {
-          const dlg = OK.QM.dialog(`<h3>この作品を消しますか？</h3><p class="qm-sub">${e.code ? '挑戦状はそのまま残り、ほかの人は戦えます。' : ''}この端末の一覧から消えます。</p><button class="qm-b" id="rm-ok">消す</button><button class="qm-b sub" id="rm-x">やめる</button>`);
+        const act = a.dataset.a;
+        if (act === 'pr') OK.practice(e.s);
+        else if (act === 'ed') OK.E.open(e.s);
+        else if (act === 'ch') OK.Chal.put(e.s);
+        else if (act === 'cd') OK.Chal.showCode(e.s, e.code);
+        else if (act === 'vs') OK.Chal.get(e.code).then(c => c ? OK.Chal.start(c) : toast('見つかりませんでした')).catch(() => toast('読みこめませんでした'));
+        else if (act === 'rm') {
+          const dlg = OK.QM.dialog(`<h3>この作品を消しますか？</h3><p class="qm-sub">この端末の一覧から消えます。${e.code ? '合言葉の挑戦状はそのまま残り、ほかの人は戦えます。' : ''}</p><button class="qm-b" id="rm-ok">消す</button><button class="qm-b sub" id="rm-x">やめる</button>`);
           dlg.querySelector('#rm-ok').onclick = () => { Works.remove(e.s); OK.QM.close(); openWorks(); };
           dlg.querySelector('#rm-x').onclick = () => OK.QM.close();
         }
       };
-      el.appendChild(bt); box.appendChild(el);
-      if (e.code && OK.hasDb()) OK.Chal.get(e.code).then(c => { const r = el.querySelector('[data-rec]'); if (r) r.textContent = c ? OK.Chal.recText(c) : '見つかりません'; }).catch(() => { const r = el.querySelector('[data-rec]'); if (r) r.textContent = ''; });
+      el.appendChild(bt);
+      // 最近の挑戦者（自分の作品で合言葉があるもの。読む量をおさえるため、新しい方から15こまで）
+      if (own && e.code && OK.hasDb() && shown++ < 15) {
+        const ul = document.createElement('ul'); ul.className = 'mc-res'; ul.innerHTML = '<li class="none">最近の挑戦者を読みこみ中…</li>'; el.appendChild(ul);
+        OK.Chal.get(e.code).then(c => { const r = el.querySelector('[data-rec]'); if (r) r.textContent = c ? OK.Chal.recText(c) : '見つかりません'; }).catch(() => {});
+        OK.Chal.recent(e.code).then(rs => {
+          ul.innerHTML = rs.length ? '' : '<li class="none">まだだれも挑戦していません</li>';
+          for (const r of rs) {
+            const rd = SH.decode(r.w) || {}, li = document.createElement('li');
+            li.innerHTML = `<span class="mk ${r.r ? 'l' : 'w'}">${r.r ? '負' : '勝'}</span><span class="who">「${esc(rd.ch || '?')}」の作品${r.r ? 'に破られた' : 'を倒した'}<small>${r.c ? OK.Chal.fmt(r.c) + '・' : ''}${ago(r.t)}</small></span>`;
+            if (r.r) { const b = document.createElement('button'); b.className = 'btn sm hot'; b.textContent = '仕返し'; b.onclick = () => { S().play('ui'); OK.Chal.revenge(e.s, r); }; li.appendChild(b); }
+            ul.appendChild(li);
+          }
+        }).catch(() => { ul.innerHTML = '<li class="none">読みこめませんでした</li>'; });
+      }
+      box.appendChild(el);
     }
+  }
+  OK.openWorks = openWorks;
+  function askNumber() {
+    const dlg = OK.QM.dialog(`<h3>番号で取り出す</h3><p class="qm-sub">作品の番号（合言葉・8けた）を入れると、その作品を一覧に取り出せます。ほかの人の作品なら、改造もできます。</p><label class="qm-fld">番号<input id="gn-in" maxlength="11" autocomplete="off" autocapitalize="characters" placeholder="AB3K-7XQM"></label><p class="qm-err" id="gn-err"></p><button class="qm-b" id="gn-go">取り出す</button><button class="qm-b sub" id="gn-x">やめる</button>`);
+    dlg.querySelector('#gn-x').onclick = () => OK.QM.close();
+    dlg.querySelector('#gn-go').onclick = async () => {
+      const err = dlg.querySelector('#gn-err'); err.textContent = '';
+      try { const r = await OK.Chal.fetchWork(dlg.querySelector('#gn-in').value); OK.QM.close(); toast(r.already ? 'その作品はもう一覧にあります' : '取り出しました'); openWorks(); }
+      catch (e) { err.textContent = e.message && !/^http/.test(e.message) ? e.message : '読みこめませんでした。通信を確認してね'; }
+    };
+  }
+  async function acctOut() {
+    try {
+      const code = await OK.Chal.acctOut(), shown = code.slice(0, 5) + '-' + code.slice(5);
+      const dlg = OK.QM.dialog(`<h3>引き継ぎコード</h3><p class="xf-code">${shown}</p><p class="qm-sub">新しい端末の「あなたの作品」→「引き継ぎコードを入れる」に入力すると、作品ぜんぶ（${Works.list().length}こ）と挑戦状の成績を引き継げます。<br>コードは人に教えないでください。</p><button class="qm-b" id="xo-cp">コピー</button><button class="qm-b sub" id="xo-ok">とじる</button>`);
+      dlg.querySelector('#xo-cp').onclick = () => OK.Chal.copy(shown);
+      dlg.querySelector('#xo-ok').onclick = () => OK.QM.close();
+    } catch (e) { toast(e.message && !/^http/.test(e.message) ? e.message : 'コードを作れませんでした。通信を確認してね'); }
+  }
+  function acctIn() {
+    const dlg = OK.QM.dialog(`<h3>引き継ぎコードを入れる</h3><p class="qm-sub">前の端末で出した引き継ぎコード（10文字）を入れてください。</p><label class="qm-fld">コード<input id="xi-in" maxlength="16" autocomplete="off" autocapitalize="off" placeholder="abcde-fghjk"></label><p class="qm-err" id="xi-err"></p><button class="qm-b" id="xi-go">引き継ぐ</button><button class="qm-b sub" id="xi-x">やめる</button>`);
+    dlg.querySelector('#xi-x').onclick = () => OK.QM.close();
+    dlg.querySelector('#xi-go').onclick = async () => {
+      const err = dlg.querySelector('#xi-err'); err.textContent = '';
+      try { const n = await OK.Chal.acctIn(dlg.querySelector('#xi-in').value); OK.QM.close(); toast(n ? `${n}この作品を引き継ぎました` : 'もう全部この端末にあります'); openWorks(); }
+      catch (e) { err.textContent = e.message && !/^http/.test(e.message) ? e.message : '読みこめませんでした。通信を確認してね'; }
+    };
   }
 
   // ---------- 試合 ----------

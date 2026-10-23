@@ -34,6 +34,8 @@
     st.form = keepForm && st.forms.includes(keepForm) ? keepForm : st.forms[0];
     setForm(st.form, true);
     showEmpty(false);
+    let seen = false; try { seen = localStorage.getItem('ok_tut') === '1'; } catch (e) {}
+    if (!seen) { try { localStorage.setItem('ok_tut', '1'); } catch (e) {} setTimeout(() => E.tutorial(0), 350); }
     return true;
   }
   E.pick = pick;
@@ -60,12 +62,15 @@
   function resize() {
     cv = $('mk-cv'); g = cv.getContext('2d');
     const board = cv.parentElement, r = board.getBoundingClientRect();
-    S = Math.max(160, Math.floor(Math.min(r.width, r.height)));
+    const ns = Math.max(120, Math.floor(Math.min(r.width, r.height)));
+    if (ns === S && cv.width === Math.round(S * (Math.min(2, window.devicePixelRatio || 1)))) { draw(); return; }
+    S = ns;
     dpr = Math.min(2, window.devicePixelRatio || 1);
     cv.style.width = cv.style.height = S + 'px'; cv.width = cv.height = Math.round(S * dpr);
     draw();
   }
   window.addEventListener('resize', () => { if (document.querySelector('#s-make.active')) resize(); });
+  if (window.ResizeObserver) { let rt = null; new ResizeObserver(() => { clearTimeout(rt); rt = setTimeout(() => { if (document.querySelector('#s-make.active')) resize(); }, 30); }).observe(document.querySelector('.mk-board')); }
 
   // ---------- 描く ----------
   function strokePath(ctx, pts, k) {
@@ -159,9 +164,9 @@
     if (!st.pls.length) t = '素材箱から画を台に置いてください';
     else if (st.b && st.b.loose.length) t = `はなれている画があります（${st.b.loose.map(i => i + 1).join('・')}画目）。どこかにくっつけてね`;
     else if (!all) t = `あと${st.prep.length - st.pls.length}画、置いてください（画はぜんぶ使います）`;
-    else t = SH.isOriginal(st.prep, st.pls) ? '元の字のままです。画を動かして、自分の形にしよう' : 'ぜんぶつながっています。この形で戦えます';
+    else t = SH.isOriginal(st.prep, st.pls) ? '元の字のままです。1画でも動かすと保存できます' : 'ぜんぶつながっています。保存すると合言葉がつきます';
     m.textContent = t; m.classList.toggle('bad', !!(st.b && st.b.loose.length));
-    $('mk-save').disabled = !ok;
+    $('mk-save').disabled = !ok || SH.isOriginal(st.prep, st.pls);
     $('mk-st').textContent = st.ch ? `${st.prep.length}画` + (st.forms.length > 1 ? '' : '・' + GL.FORM[st.form]) : '';
     for (const id of ['mk-rl', 'mk-rr', 'mk-out']) $(id).disabled = st.sel < 0 || !st.pls.some(p => p.i === st.sel);
     $('mk-undo').disabled = !st.hist.length;
@@ -174,8 +179,8 @@
     const s = SH.stats(st.full);
     let big = 1; try { big = new OK.Body({ key: 'x', parts: st.full.parts, st: s, pol: [] }, 0).big; } catch (e) {}
     box.innerHTML = OK.STATS.map(x => `<div><b>${x.n} <span>${x.from}</span></b><b>${s[x.k]}</b></div>`).join('') +
-      (big > 1.01 ? `<div class="bonus"><b>広がり加点</b><b>体力×${(Math.round(big * 100) / 100).toFixed(2)}</b></div>` : '') +
-      (SH.hpx(st.prep.length) > 1.01 ? `<div class="bonus2"><b>少ない画数の分</b><b>体力×${SH.hpx(st.prep.length).toFixed(2)}</b></div>` : '');
+      (big > 1.01 ? `<div class="bonus"><b>広がり加点 <span>体力</span></b><b>×${(Math.round(big * 100) / 100).toFixed(2)}</b></div>` : '') +
+      (SH.hpx(st.prep.length) > 1.01 ? `<div class="bonus2"><b>画数の分 <span>体力</span></b><b>×${SH.hpx(st.prep.length).toFixed(2)}</b></div>` : '');
     if (c) { c.clearRect(0, 0, 300, 270); c.save(); c.scale(2, 2); OK.R.radar(c, 75, 70, 48, OK.STATS.map(x => s[x.k]), null, { fs: 10 }); c.restore(); }
   }
   function remember() { st.hist.push(JSON.stringify(st.pls)); if (st.hist.length > 60) st.hist.shift(); }
@@ -292,6 +297,8 @@
     $('mk-rand').onclick = () => pick(OK.randomChar());
     $('mk-back').onclick = () => { OK.S && OK.S.play('ui'); if ($('mk-empty').classList.contains('on') && st.ch) { showEmpty(false); return; } OK.toTitle(); };
     $('mk-save').onclick = save;
+    $('mk-help').onclick = () => E.tutorial(0);
+    $('mk-stats').onclick = () => { $('mk-stats').classList.toggle('open'); stats(); };
     document.addEventListener('keydown', e => {
       if (!document.querySelector('#s-make.active') || /input|select|textarea/i.test(document.activeElement && document.activeElement.tagName)) return;
       const pl = st.pls.find(p => p.i === st.sel);
@@ -301,18 +308,45 @@
       else if (pl && (e.key === 'Delete' || e.key === 'Backspace')) $('mk-out').click();
     });
   };
-  function save() {
-    if (!st.b || !st.b.connected || st.pls.length !== st.prep.length) return;
+  E.tutorial = function (k) {
+    const T = [
+      ['✋', '画を動かす', '台の画をドラッグして動かします。<br>素材箱の画は、ドラッグで台に置けます（タップすると元の位置に置きます）。<br>台の下へドラッグすると、箱にもどります。'],
+      ['⟲ ⟳', '回す', '画をタップしてえらび、⟲ ⟳ で15度ずつ回します。<br>縦に積むのではなく、<b>重ねて</b>1つの形にします。'],
+      ['🔗', 'くっつけて保存', '画は<b>必ずどこかの画とくっつけます</b>。はなれた画は赤くなります。<br>画をぜんぶ使って保存すると、<b>合言葉</b>がつき、その作品が挑戦状になります。'],
+    ];
+    const t = T[k];
+    const card = OK.QM.dialog(`<p class="tut-step">作り方 ${k + 1}/3</p><div class="tut-pic">${t[0]}</div><h3>${t[1]}</h3><p>${t[2]}</p>
+      <div class="tut-dots">${T.map((_, i) => `<i class="${i === k ? 'on' : ''}"></i>`).join('')}</div>
+      <button class="qm-b" id="tu-n">${k < 2 ? 'つぎへ' : 'はじめる'}</button>${k > 0 ? '<button class="qm-b sub" id="tu-p">もどる</button>' : ''}`);
+    card.querySelector('#tu-n').onclick = () => { if (k < 2) E.tutorial(k + 1); else OK.QM.close(); };
+    const pb = card.querySelector('#tu-p'); if (pb) pb.onclick = () => E.tutorial(k - 1);
+  };
+  async function save() {
+    if (!st.b || !st.b.connected || st.pls.length !== st.prep.length || SH.isOriginal(st.prep, st.pls)) return;
     const s = SH.encode(st.form, st.ch, st.pls);
-    const isNew = OK.Works.add(s);
+    const had = OK.Works.find(s);
+    OK.Works.add(s);
+    $('mk-save').disabled = true;
     OK.S && OK.S.play('win');
-    const card = OK.QM.dialog(`<h3>${isNew ? '保存しました！' : 'この形はもう保存してあります'}</h3>
-      <p class="qm-sub">「あなたの作品」からいつでも使えます。</p>
-      <button class="qm-b" id="sv-pr">この作品で練習試合</button>
-      <button class="qm-b alt" id="sv-ch">挑戦状にする（合言葉をつける）</button>
+    let code = had && had.code;
+    const card = OK.QM.dialog(`<h3>${had ? 'この形はもう保存してあります' : '保存しました！'}</h3>
+      <p class="qm-sub">合言葉</p><p class="xf-code" id="sv-code">${code ? OK.Chal.fmt(code) : '…'}</p>
+      <p class="qm-sub" id="sv-note">${code ? 'この合言葉で、だれでもこの作品と戦えます。' : '合言葉をつけています…'}</p>
+      <button class="qm-b" id="sv-x" ${code ? '' : 'disabled'}>Xに投稿（画像つき）</button>
+      <button class="qm-b alt" id="sv-pr">この作品で練習試合</button>
       <button class="qm-b sub" id="sv-go">続けて作る</button>`);
     card.querySelector('#sv-pr').onclick = () => { OK.QM.close(); OK.practice(s); };
-    card.querySelector('#sv-ch').onclick = () => { OK.QM.close(); OK.Chal.put(s); };
-    card.querySelector('#sv-go').onclick = () => OK.QM.close();
+    card.querySelector('#sv-go').onclick = () => { OK.QM.close(); msg(); };
+    card.querySelector('#sv-x').onclick = async () => { const w = await SH.make(s); OK.Chal.shareWork(w, code); };
+    if (!code) {
+      try { code = await OK.Chal.register(s); }
+      catch (e) { code = null; const n = card.querySelector('#sv-note'); if (n) n.textContent = (e && e.message && !/^http/.test(e.message) ? e.message : '通信できませんでした') + '。作品はこの端末に保存してあります。「あなたの作品」から、あとで合言葉をつけられます'; const c = card.querySelector('#sv-code'); if (c) c.textContent = '—'; }
+      if (code && card.querySelector('#sv-code')) {
+        card.querySelector('#sv-code').textContent = OK.Chal.fmt(code);
+        card.querySelector('#sv-note').textContent = 'この合言葉で、だれでもこの作品と戦えます。';
+        card.querySelector('#sv-x').disabled = false;
+      }
+    }
+    msg();
   }
 })();

@@ -3,7 +3,7 @@
 //  ※この値は公開しても問題ない種類のものです（守りはデータベースのルールで行います）
 // =============================================
 window.OK = window.JM = window.OK || window.JM || {};
-OK.VER = 2;   // 版の番号（version.json と同じにする。上げると開いたままの古い画面が読みなおす）
+OK.VER = 3;   // 版の番号（version.json と同じにする。上げると開いたままの古い画面が読みなおす）
 OK.FIREBASE_CONFIG = {
   apiKey: "AIzaSyAcJgJLVbuvx85_qEGJe1WhwsOelidxeYk",
   authDomain: "otokonoji.firebaseapp.com",

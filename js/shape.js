@@ -11,7 +11,7 @@
   const CANVAS = SH.CANVAS = 1600;   // 組み立ての台の大きさ
   const OFF = SH.OFF = 300;          // 元の字（0〜1000）を台の真ん中に置くずらし
   const HW = SH.HW = 38;             // 線の太さの半分
-  const N = SH.N = 200, CELL = CANVAS / N;   // マス目
+  const N = SH.N = 320, CELL = CANVAS / N;   // マス目（細かいほど形がなめらか）
   // 回転の表（15度ずつ 24方向）
   const Q = [1, 0.9659258262890683, 0.8660254037844387, 0.7071067811865476, 0.5, 0.25881904510252074, 0];
   const COS = [], SIN = [];
@@ -161,6 +161,12 @@
     const m = []; const k = p.length / 2;
     for (let i = 0; i < k; i++) { const j = (i + 1) % k; m.push((p[2 * i] + p[2 * j]) / 2, (p[2 * i + 1] + p[2 * j + 1]) / 2); }
     p = m;
+    // 角を切って丸める（Chaikin を2回）
+    for (let pass = 0; pass < 2; pass++) {
+      const q = [], c = p.length / 2;
+      for (let i = 0; i < c; i++) { const j = (i + 1) % c, ax = p[2 * i], ay = p[2 * i + 1], bx = p[2 * j], by = p[2 * j + 1]; q.push(ax * 0.75 + bx * 0.25, ay * 0.75 + by * 0.25, ax * 0.25 + bx * 0.75, ay * 0.25 + by * 0.75); }
+      p = q;
+    }
     // Douglas-Peucker（輪を2つに分けて）
     const L = p.length / 2;
     let far = 0, fd = -1; for (let i = 1; i < L; i++) { const d = (p[2 * i] - p[0]) * (p[2 * i] - p[0]) + (p[2 * i + 1] - p[1]) * (p[2 * i + 1] - p[1]); if (d > fd) { fd = d; far = i; } }
@@ -232,7 +238,7 @@
     const res = { ink: ras.cnt, comps: cmp.n, loose, connected: cmp.n === 1, strokes: pls.length };
     if (!opt.full) return res;
     // 輪郭 → 多角形（台の座標）
-    const rings = contours(ras.own).map(r => simplify(r, 0.9)).filter(r => r.length >= 6 && area2(r) !== 0);
+    const rings = contours(ras.own).map(r => simplify(r, 0.55)).filter(r => r.length >= 6 && area2(r) !== 0);
     const outers = rings.filter(r => area2(r) > 0), holes = rings.filter(r => area2(r) < 0);
     const parts = outers.map(r => ({ r, a: area2(r) }));
     // 穴は、それをかこむ外まわりのうち、いちばん小さいものにつなぐ

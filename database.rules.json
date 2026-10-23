@@ -1,0 +1,112 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "ok": {
+      "$code": {
+        ".read": "$code.length <= 20",
+        ".write": "auth != null && $code.length <= 20",
+        "players": {
+          "$slot": {
+            ".validate": "($slot === '0' || $slot === '1') && newData.hasChildren(['id', 'name']) && newData.child('name').isString() && newData.child('name').val().length <= 8"
+          }
+        },
+        "watchers": {
+          "$id": {
+            ".validate": "$id.length <= 24 && newData.child('name').isString() && newData.child('name').val().length <= 8"
+          }
+        },
+        "ready": {
+          "$slot": {
+            ".validate": "($slot === '0' || $slot === '1') && newData.isNumber()"
+          }
+        },
+        "game": {
+          ".validate": "newData.hasChildren(['m'])"
+        },
+        "sel": {
+          "$slot": {
+            ".validate": "($slot === '0' || $slot === '1') && newData.hasChildren(['ok'])"
+          }
+        },
+        "pick": {
+          "$m": {
+            "$slot": {
+              ".validate": "($slot === '0' || $slot === '1') && newData.hasChildren(['w']) && newData.child('w').isString() && newData.child('w').val().length <= 800"
+            }
+          }
+        },
+        "res": {
+          "$m": {
+            "$slot": {
+              ".validate": "($slot === '0' || $slot === '1') && newData.isString() && newData.val().length <= 80"
+            }
+          }
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    },
+    "qm": {
+      "$g": {
+        "$v": {
+          ".read": "$g.length <= 12 && $v.length <= 12",
+          "$id": {
+            ".write": "auth != null && $id.length <= 24",
+            ".validate": "newData.hasChildren(['t']) && newData.child('t').isNumber() && (!newData.child('n').exists() || (newData.child('n').isString() && newData.child('n').val().length <= 8)) && (!newData.child('bn').exists() || (newData.child('bn').isString() && newData.child('bn').val().length <= 8)) && (!newData.child('code').exists() || (newData.child('code').isString() && newData.child('code').val().length <= 12)) && (!newData.child('by').exists() || (newData.child('by').isString() && newData.child('by').val().length <= 24)) && (!newData.child('cpu').exists() || newData.child('cpu').isBoolean()) && (!newData.child('ok').exists() || newData.child('ok').isBoolean()) && (!newData.child('no').exists() || newData.child('no').isBoolean())",
+            "$other": {
+              ".validate": "$other === 't' || $other === 'n' || $other === 'bn' || $other === 'code' || $other === 'by' || $other === 'cpu' || $other === 'ok' || $other === 'no'"
+            }
+          }
+        }
+      }
+    },
+    "pres": {
+      ".read": true,
+      "$id": {
+        ".write": "auth != null && $id.length <= 24",
+        ".validate": "newData.hasChildren(['g', 's']) && newData.child('g').isString() && newData.child('g').val().length <= 12 && (newData.child('s').val() === 'w' || newData.child('s').val() === 'c' || newData.child('s').val() === 'p')",
+        "$other": {
+          ".validate": "$other === 'g' || $other === 's'"
+        }
+      }
+    },
+    "ok_chal": {
+      ".read": true,
+      ".indexOn": ["t"],
+      "$code": {
+        ".write": "auth != null && newData.exists() && ((!data.exists() && $code.matches(/^[A-HJ-NP-Z2-9]{8}$/) && newData.child('u').val() === auth.uid && newData.child('t').val() === now && newData.child('wn').val() === 0 && newData.child('ln').val() === 0 && newData.parent().parent().child('ok_last').child(auth.uid).val() === now) || (data.exists() && newData.child('w').val() === data.child('w').val() && newData.child('t').val() === data.child('t').val() && newData.child('u').val() === data.child('u').val() && newData.child('x').val() === data.child('x').val() && ((newData.child('wn').val() === data.child('wn').val() + 1 && newData.child('ln').val() === data.child('ln').val()) || (newData.child('ln').val() === data.child('ln').val() + 1 && newData.child('wn').val() === data.child('wn').val()))))",
+        ".validate": "newData.hasChildren(['w', 't', 'wn', 'ln', 'u']) && newData.child('w').isString() && newData.child('w').val().length <= 800 && newData.child('t').isNumber() && newData.child('wn').isNumber() && newData.child('ln').isNumber() && newData.child('u').isString() && newData.child('u').val().length <= 128",
+        "$other": {
+          ".validate": "$other === 'w' || $other === 't' || $other === 'wn' || $other === 'ln' || $other === 'u' || $other === 'x'"
+        }
+      }
+    },
+    "ok_res": {
+      ".read": true,
+      "$code": {
+        ".indexOn": ["t"],
+        "$rid": {
+          ".write": "auth != null && $rid.length <= 24 && !data.exists() && newData.exists() && root.child('ok_chal').child($code).exists() && newData.child('u').val() === auth.uid && newData.child('t').val() === now && newData.parent().parent().parent().child('ok_rlast').child(auth.uid).val() === now",
+          ".validate": "newData.hasChildren(['w', 'r', 't', 'u']) && newData.child('w').isString() && newData.child('w').val().length <= 800 && (newData.child('r').val() === 0 || newData.child('r').val() === 1) && newData.child('t').isNumber()",
+          "$other": {
+            ".validate": "$other === 'w' || $other === 'r' || $other === 't' || $other === 'u'"
+          }
+        }
+      }
+    },
+    "ok_last": {
+      "$uid": {
+        ".write": "auth != null && auth.uid === $uid",
+        ".validate": "newData.val() === now && (!data.exists() || data.val() < now - 15000)"
+      }
+    },
+    "ok_rlast": {
+      "$uid": {
+        ".write": "auth != null && auth.uid === $uid",
+        ".validate": "newData.val() === now && (!data.exists() || data.val() < now - 4000)"
+      }
+    }
+  }
+}

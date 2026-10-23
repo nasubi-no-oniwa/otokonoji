@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>漢ノ字</title>
+<meta name="description" content="漢字を画（かく）ごとにばらして、自分だけの形に組み替える。その形で、ぶつかり合って割り合う。どの字を、どう組むか。">
+<meta name="theme-color" content="#16120f">
+<meta property="og:title" content="漢ノ字（オトコノジ）">
+<meta property="og:description" content="漢字を画ごとにばらして組み替え、その形でぶつかり合う。どの字を、どう組むか。">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://nasubi-no-oniwa.github.io/otokonoji/">
+<meta property="og:site_name" content="なすびのお庭">
+<meta property="og:image" content="https://nasubi-no-oniwa.github.io/otokonoji/icons/ogp.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="漢ノ字（オトコノジ）">
+<meta name="twitter:description" content="漢字を画ごとにばらして組み替え、その形でぶつかり合う。どの字を、どう組むか。">
+<meta name="twitter:image" content="https://nasubi-no-oniwa.github.io/otokonoji/icons/ogp.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Yuji+Syuku&family=M+PLUS+Rounded+1c:wght@500;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=1">
+</head>
+<body>
+<canvas id="arena"></canvas>
+
+<!-- タイトル -->
+<section class="screen active" id="s-title">
+  <div class="t-wrap">
+    <div class="logo"><span class="lg-k">漢</span><span class="lg-no">ノ</span><span class="lg-k">字</span></div>
+    <div class="logo-r">オトコノジ</div>
+    <p class="sub">漢字を<b>画（かく）ごとにばらして</b>、自分だけの形に組み替えろ。<br>その形で、ぶつかり合って割り合う。</p>
+    <div class="t-btns">
+      <button class="btn big hot" id="btn-make">字をばらして作る</button>
+      <div class="row t-row2">
+        <button class="btn sm2" id="btn-practice">練習試合</button>
+        <button class="btn sm2" id="btn-chal">挑戦状と戦う</button>
+      </div>
+      <button class="btn big blue" id="btn-online">部屋番号で対戦</button>
+      <div class="row t-row2">
+        <button class="btn sm2" id="btn-works">あなたの作品</button>
+        <button class="btn sm2" id="btn-howto">あそびかた</button>
+        <button class="btn sm2" id="btn-snd">音：<span id="snd-name">あり</span></button>
+      </div>
+      <p class="chal-mine" id="chal-mine"></p>
+      <button class="news" id="chal-news" hidden></button>
+    </div>
+    <p class="loading" id="loading">読みこみ中…</p>
+  </div>
+</section>
+
+<!-- 作る -->
+<section class="screen" id="s-make">
+  <header class="bar mk-bar">
+    <button class="btn sm ghost" id="mk-back">← もどる</button>
+    <button class="mk-ch" id="mk-ch" title="字をかえる"><span id="mk-ch-t">？</span><small>字をかえる</small></button>
+    <select class="cls" id="mk-form" aria-label="字形" hidden></select>
+    <span class="mk-st" id="mk-st"></span>
+  </header>
+  <div class="mk-body">
+    <div class="mk-board">
+      <canvas id="mk-cv"></canvas>
+      <div class="mk-empty" id="mk-empty">
+        <p>ばらす字を1つ入れてください</p>
+        <div class="mk-q"><input id="mk-q" maxlength="8" autocomplete="off" autocapitalize="off" placeholder="例：木"><button class="btn hot" id="mk-go">ばらす</button></div>
+        <button class="btn sm" id="mk-rand">おまかせ</button>
+        <p class="note">漢字・ひらがな・カタカナ・英数字・ハングルが使えます。</p>
+      </div>
+    </div>
+    <div class="mk-side">
+      <div class="mk-tools" id="mk-tools">
+        <button class="btn sm" id="mk-rl" title="左に15度">⟲ 15°</button>
+        <button class="btn sm" id="mk-rr" title="右に15度">⟳ 15°</button>
+        <button class="btn sm" id="mk-out">箱にもどす</button>
+        <button class="btn sm" id="mk-undo">↶ もどす</button>
+        <button class="btn sm" id="mk-reset">元の字</button>
+        <button class="btn sm" id="mk-clear">ぜんぶ箱へ</button>
+      </div>
+      <div class="mk-box-h"><b>素材箱</b><span id="mk-box-n"></span><small>書き順に並んでいます。ドラッグで台へ</small></div>
+      <div class="mk-box" id="mk-box"></div>
+      <div class="mk-stats">
+        <canvas id="mk-radar" width="300" height="270" style="width:150px;height:135px"></canvas>
+        <div class="st-list" id="mk-stl"></div>
+      </div>
+      <p class="mk-msg" id="mk-msg"></p>
+      <div class="mk-foot"><button class="btn big hot" id="mk-save" disabled>この形で保存</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- えらぶ（試合の前） -->
+<section class="screen" id="s-setup">
+  <header class="bar">
+    <button class="btn sm ghost" id="btn-setup-back">← もどる</button>
+    <b class="su-title" id="su-title">練習試合</b>
+    <div class="on-st" id="on-st"></div>
+  </header>
+  <div class="slots">
+    <div class="slot" id="slot0"></div>
+    <div class="vs-mid"><span>VS</span></div>
+    <div class="slot" id="slot1"></div>
+  </div>
+  <footer class="bar bottom">
+    <button class="btn big hot" id="btn-fight">はっけよい！</button>
+  </footer>
+</section>
+
+<!-- 作品をえらぶ -->
+<div class="sheet" id="wpick">
+  <div class="sheet-in">
+    <div class="pk-head"><b class="pk-t" id="wp-t">作品をえらぶ</b><button class="btn sm ghost2" id="wp-close">とじる</button></div>
+    <div class="wp-list" id="wp-list"></div>
+  </div>
+</div>
+
+<!-- 元の字をえらぶ（練習の相手） -->
+<div class="sheet" id="cpick">
+  <div class="sheet-in cp">
+    <div class="pk-head"><b class="pk-t">練習の相手</b><button class="btn sm ghost2" id="cp-close">とじる</button></div>
+    <p class="note">何もいじっていない「元の字」と戦います。好きな字を入れてください。</p>
+    <div class="mk-q"><input id="cp-q" maxlength="8" autocomplete="off" autocapitalize="off" placeholder="例：龍"><button class="btn hot" id="cp-go">この字と戦う</button></div>
+    <div class="row"><button class="btn sm" id="cp-rand">おまかせ</button><button class="btn sm" id="cp-mine">自分の作品から</button></div>
+    <p class="err" id="cp-err"></p>
+  </div>
+</div>
+
+<!-- 試合 -->
+<section class="screen" id="s-battle">
+  <div class="hud">
+    <div class="hp l"><b id="hn0"></b><div class="gauge"><i id="hg0"></i></div><span id="hv0">100%</span></div>
+    <div class="clock" id="clock">60</div>
+    <div class="hp r"><span id="hv1">100%</span><div class="gauge"><i id="hg1"></i></div><b id="hn1"></b></div>
+  </div>
+  <div class="call" id="call"></div>
+  <div class="b-btns"><button class="btn sm ghost" id="btn-speed">×1</button><button class="btn sm ghost" id="btn-skip">結果へ</button></div>
+</section>
+
+<!-- 結果 -->
+<div class="sheet" id="result">
+  <div class="sheet-in res">
+    <div class="res-t" id="res-t"></div>
+    <div class="res-line" id="res-line"></div>
+    <canvas id="res-img" width="1200" height="675" hidden></canvas>
+    <button class="btn big hot img-btn" id="btn-img">勝利画像を出す</button>
+    <div class="row">
+      <button class="btn" id="btn-replay">もう一度見る</button>
+      <button class="btn" id="btn-change">組み合わせを変える</button>
+    </div>
+    <div class="row" id="chal-row"><button class="btn" id="btn-remake">この作品を作り直す</button><button class="btn hot" id="btn-chal-next">べつの挑戦状と戦う</button></div>
+    <p class="note" id="res-note"></p>
+  </div>
+</div>
+
+<!-- 画像 -->
+<div class="sheet" id="imgview">
+  <div class="sheet-in iv">
+    <img id="iv-img" alt="結果画像">
+    <div class="row">
+      <button class="btn hot" id="btn-share">Xに投稿</button>
+      <button class="btn" id="btn-save">画像を保存</button>
+      <button class="btn" id="iv-close">とじる</button>
+    </div>
+    <p class="note" id="iv-note">画像を長押しでも保存できます</p>
+  </div>
+</div>
+
+<!-- あなたの作品 -->
+<section class="screen" id="s-works">
+  <div class="panel">
+    <header class="p-head"><button class="btn sm ghost" id="btn-works-back">← もどる</button><h2>あなたの作品</h2></header>
+    <div class="p-body"><div id="works-list"></div></div>
+  </div>
+</section>
+
+<!-- 挑戦状と戦う -->
+<section class="screen" id="s-chal">
+  <div class="card">
+    <h2>挑戦状と戦う</h2>
+    <p class="note">だれかが作って置いた作品と戦います。相手がその場にいなくても戦えます。</p>
+    <label class="fld">合言葉（8けた）<input id="ch-code" maxlength="11" autocomplete="off" autocapitalize="characters" placeholder="例：AB3K-7XQM"></label>
+    <button class="btn hot wide" id="ch-go">この挑戦状と戦う</button>
+    <p class="err" id="ch-err"></p>
+    <button class="btn blue wide" id="ch-rand">ランダムな挑戦状と戦う</button>
+    <button class="btn sm ghost2" id="ch-back">もどる</button>
+  </div>
+</section>
+
+<!-- 部屋番号で対戦 -->
+<section class="screen" id="s-online">
+  <div class="card on-card">
+    <h2>部屋番号で対戦</h2>
+    <div id="on-form">
+      <p class="note">同じ部屋番号を入れた人と1対1。お互いに作品をこっそり決めて、同時に公開します。3人目からは観戦です。</p>
+      <label class="fld">部屋番号<input id="in-code" maxlength="20" placeholder="例：1234" autocomplete="off"></label>
+      <button class="btn hot wide" id="btn-join">入る</button>
+    </div>
+    <div id="on-wait" class="hide"><p class="big-note" id="on-msg">あいてを待っています…</p><p class="note" id="on-people"></p></div>
+    <p class="err" id="on-err"></p>
+    <button class="btn sm ghost2" id="btn-on-back">もどる</button>
+  </div>
+</section>
+
+<!-- あそびかた -->
+<section class="screen" id="s-howto">
+  <div class="card how">
+    <h2>あそびかた</h2>
+    <ol>
+      <li><b>字をえらんで、ばらす。</b>漢字を1つ入れると、画（かく）ごとにばらばらになって「素材箱」に入ります。同じ字でも日本と中国・台湾で形がちがう字は、どちらの形にするか選べます。</li>
+      <li><b>組み替える。</b>画をドラッグして台に置き、「⟲」「⟳」で15度ずつ回します。縦に積むのではなく、<b>重ねて</b>1つの形にします。画は<b>必ずどこかの画とくっついていないといけません</b>（はなれた画は赤くなり、保存できません）。画はぜんぶ使います。</li>
+      <li><b>保存して戦う。</b>あとは全自動。ぶつかるたびに割れて欠けていき、先に65％を失った方の負け。60秒たったら残りが多い方の勝ちです。<b>同じ作品どうしなら、いつでも必ず同じ結果</b>になります。</li>
+      <li><b>練習試合</b>：自分の作品と、何もいじっていない「元の字」（好きな字）を戦わせます。</li>
+      <li><b>挑戦状</b>：作品を挑戦状にすると、<b>8けたの合言葉</b>がつきます。形の画像と合言葉をXに投稿しよう。ほかの人は「挑戦状と戦う」に合言葉を入れて戦えます。ランダムな挑戦状とも戦えます。</li>
+      <li><b>だれかと対戦・部屋番号で対戦</b>：その場にいる人と、作品どうしで1対1。毎晩21時〜22時は対戦タイム！</li>
+    </ol>
+    <h3>強さの決まり方</h3>
+    <p class="note">組み立てた形は、大きさをそろえてから戦います。<br>体力＝線が占める広さ（重ねるほど減る）、速さ＝軽さ、かたさ＝すき間の少なさ、鋭さ＝形の出っぱり、勢い＝元の字の画数。数字は「元の字」約1万2千字の中で何番目くらいかを0〜100で表したものです。<br>大きく広がった形は土俵に入る大きさまで縮めて、そのぶん体力と重さに<b>加点</b>（1.6倍まで）。画数が少ない字は細い線が欠けやすいので、画数に応じて体力に少し足しています。</p>
+    <h3>使える字</h3>
+    <p class="note" id="how-chars">※漢字・ひらがな・カタカナ・英数字・ハングルが使えます。旧字や、とてもめずらしい字は、画のデータがないため使えません。<br>ハングルは、部品（字母）の画を組み合わせて作っているので、ふつうの字体と少し形がちがう字があります。</p>
+    <h3>データ</h3>
+    <p class="credit">日本の字形：KanjiVG（Ulrich Apel、CC BY-SA 3.0）を加工して作成<br>中国・台湾の字形：Make Me a Hanzi（Shaunak Kishore）／hanzi-writer-data（Arphic Public License）を加工して作成<br>英数字：Hershey フォント（hersheytext、MIT License）を加工して作成<br>加工した画のデータ（data/g）は、もとのデータと同じ条件（CC BY-SA 3.0・Arphic Public License）で公開しています<br>効果音：Kenney「Impact Sounds」（CC0）　音楽：自作（プログラムで作成）</p>
+    <button class="btn" id="btn-how-back">もどる</button>
+  </div>
+</section>
+
+<div class="toast" id="toast"></div>
+
+<script src="js/firebase-config.js?v=1"></script>
+<script src="js/glyph.js?v=1"></script>
+<script src="js/shape.js?v=1"></script>
+<script src="js/pct.js?v=1"></script>
+<script src="js/sim.js?v=1"></script>
+<script src="js/render.js?v=1"></script>
+<script src="js/resimg.js?v=1"></script>
+<script src="js/sound.js?v=1"></script>
+<script src="js/online.js?v=1"></script>
+<script src="js/qm.js?v=1"></script>
+<script src="js/chal.js?v=1"></script>
+<script src="js/edit.js?v=1"></script>
+<script src="js/main.js?v=1"></script>
+</body>
+</html>

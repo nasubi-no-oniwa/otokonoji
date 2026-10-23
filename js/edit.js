@@ -167,6 +167,11 @@
     else t = SH.isOriginal(st.prep, st.pls) ? '元の字のままです。1画でも動かすと保存できます' : 'ぜんぶつながっています。保存すると合言葉がつきます';
     m.textContent = t; m.classList.toggle('bad', !!(st.b && st.b.loose.length));
     $('mk-save').disabled = !ok || SH.isOriginal(st.prep, st.pls);
+    const ready = !$('mk-save').disabled;
+    $('mk-save').classList.toggle('ready', ready);
+    $('mk-savehint').classList.toggle('ready', ready);
+    $('mk-savehint').innerHTML = ready ? '↓ 保存できます！ いちばん下の<b>「この形で保存」</b>を押してね' : '↓ できたら、いちばん下の<b>「この形で保存」</b>ボタンで保存';
+    floatHint();
     $('mk-st').textContent = st.ch ? `${st.prep.length}画` + (st.forms.length > 1 ? '' : '・' + GL.FORM[st.form]) : '';
     for (const id of ['mk-rl', 'mk-rr', 'mk-out']) $(id).disabled = st.sel < 0 || !st.pls.some(p => p.i === st.sel);
     $('mk-undo').disabled = !st.hist.length;
@@ -278,7 +283,16 @@
     const pl = st.pls.find(p => p.i === st.sel); if (!pl) return;
     remember(); pl.r = (pl.r + dir + 24) % 24; SH.clamp(st.prep[pl.i], pl); OK.S && OK.S.play('ui'); update();
   }
+  // 保存ボタンが画面の外にあるときは、下に案内を浮かべる
+  let saveSeen = true;
+  function floatHint() {
+    const f = $('mk-float'); if (!f) return;
+    f.hidden = saveSeen || !document.querySelector('#s-make.active') || !st.prep || $('mk-empty').classList.contains('on');
+    f.classList.toggle('ready', !$('mk-save').disabled);
+  }
   E.bind = function () {
+    if (window.IntersectionObserver) new IntersectionObserver(es => { saveSeen = es[0].isIntersecting; floatHint(); }, { threshold: 0.6 }).observe($('mk-save'));
+    $('mk-float').onclick = () => { $('mk-save').scrollIntoView({ behavior: 'smooth', block: 'end' }); };
     cv = $('mk-cv'); g = cv.getContext('2d');
     cv.addEventListener('pointerdown', onDown); cv.addEventListener('pointermove', onMove);
     cv.addEventListener('pointerup', onUp); cv.addEventListener('pointercancel', onUp);

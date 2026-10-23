@@ -25,7 +25,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Yuji+Syuku&family=M+PLUS+Rounded+1c:wght@500;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=3">
+<link rel="stylesheet" href="css/style.css?v=4">
 </head>
 <body>
 <canvas id="arena"></canvas>
@@ -83,6 +83,7 @@
         <button class="btn sm" id="mk-reset" title="元の字の形にもどす">元の字</button>
         <button class="btn sm" id="mk-clear" title="ぜんぶ箱にもどす">全部箱へ</button>
       </div>
+      <p class="mk-savehint" id="mk-savehint">↓ できたら、いちばん下の<b>「この形で保存」</b>ボタンで保存</p>
       <div class="mk-box-h"><b>素材箱</b><span id="mk-box-n"></span><small>書き順に並んでいます。ドラッグで台へ</small></div>
       <div class="mk-box" id="mk-box"></div>
       <div class="mk-stats" id="mk-stats" title="押すとグラフ">
@@ -230,9 +231,10 @@
   </div>
 </section>
 
+<button class="mk-float" id="mk-float" hidden>↓ 保存ボタンは下にあります</button>
 <div class="toast" id="toast"></div>
 
-<script src="js/firebase-config.js?v=3"></script>
+<script src="js/firebase-config.js?v=4"></script>
 <script src="js/glyph.js?v=3"></script>
 <script src="js/shape.js?v=3"></script>
 <script src="js/pct.js?v=3"></script>
@@ -243,7 +245,7 @@
 <script src="js/online.js?v=3"></script>
 <script src="js/qm.js?v=3"></script>
 <script src="js/chal.js?v=3"></script>
-<script src="js/edit.js?v=3"></script>
+<script src="js/edit.js?v=4"></script>
 <script src="js/main.js?v=3"></script>
 </body>
 </html>

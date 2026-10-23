@@ -24,7 +24,7 @@
 
   // ---------- 状態 ----------
   const st = OK.st = { mode: 'local', practice: true, chal: null, slots: [{ w: null }, { w: null }], my: -1, reveal: true, live: null, speed: 1, result: null, myLast: null };
-  function show(id) { for (const s of document.querySelectorAll('.screen')) s.classList.toggle('active', s.id === id); }
+  function show(id) { for (const s of document.querySelectorAll('.screen')) s.classList.toggle('active', s.id === id); const f = document.getElementById('mk-float'); if (f && id !== 's-make') f.hidden = true; }
   OK.show = show;
   let toastT = null;
   function toast(t) { const e = $('toast'); e.textContent = t; e.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => e.classList.remove('on'), 2400); }

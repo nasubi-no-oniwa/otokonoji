@@ -291,7 +291,7 @@
     let text = (tg.length ? '【' + tg.join('・') + '】' : '') + line;
     if (st.chal) text += `\n挑戦状【${OK.Chal.fmt(st.chal.id)}】に挑戦！あなたも→ ${OK.Chal.link(st.chal.id)}`;
     else text += '\n' + URL_GAME;
-    st.shareText = text + '\n#オトコノジ #漢ノ字';
+    st.shareText = text + '\n#オトコノジ #漢ノ字 #ブラウザゲーム';
   }
   async function openImage() {
     const r = st.result; if (!r || !st.live) return;

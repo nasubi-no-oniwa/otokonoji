@@ -116,7 +116,7 @@
     try { const code = await C.register(s); C.showCode(s, code); }
     catch (e) { const el = dlg.querySelector('#cp-e'); if (el) el.textContent = e.message && !/^http/.test(e.message) ? e.message : 'つけられませんでした。通信を確認してね'; }
   };
-  const boshu = (w, code) => `漢ノ字「${w.ch}」の挑戦状！ 合言葉【${C.fmt(code)}】\n倒せるものなら倒してみて→ ${C.link(code)}\n#オトコノジ #漢ノ字`;
+  const boshu = (w, code) => `漢ノ字「${w.ch}」の挑戦状！ 合言葉【${C.fmt(code)}】\n倒せるものなら倒してみて→ ${C.link(code)}\n#オトコノジ #漢ノ字 #ブラウザゲーム`;
   C.showCode = async function (s, code) {
     let w; try { w = await SH.make(s); } catch (e) { return; }
     const dlg = OK.QM.dialog(`<h3>合言葉</h3>
